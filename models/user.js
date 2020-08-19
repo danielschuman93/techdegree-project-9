@@ -10,16 +10,36 @@ module.exports = (sequelize) => {
             autoIncrement: true,
         },
         firstName: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: 'Please provide a value for "first name".'
+                }
+            }
         },
         lastName: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: 'Please provide a value for "last name".'
+                }
+            }
         },
         emailAddress: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: 'Please provide a value for "email address".'
+                }
+            }
         },
         password: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            validate: {
+                notEmpty: {
+                    msg: 'Please provide a value for "password".'
+                }
+            }
         },
     }, { sequelize });
 

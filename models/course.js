@@ -9,20 +9,21 @@ module.exports = (sequelize) => {
             primaryKey: true,
             autoIncrement: true,
         },
-        userId: {
-            type: Sequelize.INTEGER
-        },
         title: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            allownull: false,
         },
         description: {
-            type: Sequelize.TEXT
+            type: Sequelize.TEXT,
+            allownull: false,
         },
         estimatedTime: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            allownull: true,
         },
         materialsNeeded: {
-            type: Sequelize.STRING
+            type: Sequelize.STRING,
+            allownull: true,
         }
     }, { sequelize });
 
