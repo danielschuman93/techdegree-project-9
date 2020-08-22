@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models').User;
+const Course = require('../models').Course;
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
 
@@ -84,28 +85,37 @@ router.post('/users', asyncHandler(async(req, res) => {
 }));
 
 // GET 200: Returns a list of courses (including the user that owns each course)
-router.get('/courses', (req, res) => {
-
-});
+router.get('/courses', asyncHandler(async(req, res) => {
+    const courses = await Course.findAll();
+    res.json({courses});
+}));
 
 // GET 200: Returns a course (including the user that owns the course) for the provided course ID
-router.get('/courses/:id', (req, res) => {
-
-});
+router.get('/courses/:id', asyncHandler(async(req, res) => {
+    const course = await Course.findByPk(req.params.id);
+    res.json({course});
+}));
 
 // POST 201: Creates a course, sets the Location header to the URI for the course, and returns no content
-router.post('/courses', (req, res) => {
-
-});
+router.post('/courses', asyncHandler(async(req, res) => {
+    const course = req.body;
+    await Course.create(course);
+    res.location(`/courses/${course.id}`);
+    res.status(201).end();
+}));
 
 // PUT 204: Updates a course and returns no content
-router.put('/courses/:id', (req, res) => {
-
-});
+router.put('/courses/:id', asyncHandler(async(req, res) => {
+    const course = await Course.findByPk(req.params.id);
+    await course.update(req.body);
+    res.status(204).end();
+}));
 
 // DELETE 204: Deletes a course and returns no content
-router.delete('/courses/:id', (req, res) => {
-
-});
+router.delete('/courses/:id', asyncHandler(async(req, res) => {
+    const course = await Course.findByPk(req.params.id);
+    await course.destroy();
+    res.status(204).end();
+}));
 
 module.exports = router;
