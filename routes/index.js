@@ -78,10 +78,16 @@ router.get('/users', authenticateUser, (req, res) => {
 // POST 201: Creates a user, sets the Location header to "/", and returns no content
 router.post('/users', asyncHandler(async(req, res) => {
     const user = req.body;
-    user.password = bcryptjs.hashSync(user.password);
-    await User.create(user);
-    res.location('/');
-    res.status(201).end();
+    const userExists = await User.findAll({where: {emailAddress: user.emailAddress}});
+    if (!userExists) {
+        user.password = bcryptjs.hashSync(user.password);
+        await User.create(user);
+        res.location('/');
+        res.status(201).end();
+    } else {
+        res.status(400).json({message: 'The email address you are using is already connected to an existing account.'});
+    }
+
 }));
 
 // GET 200: Returns a list of courses (including the user that owns each course)
@@ -107,15 +113,23 @@ router.post('/courses', authenticateUser, asyncHandler(async(req, res) => {
 // PUT 204: Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
-    await course.update(req.body);
-    res.status(204).end();
+    if (course) {
+        await course.update(req.body);
+        res.status(204).end();
+    } else {
+        res.status(400).json({message: 'Please choose an existing course to update.'});
+    }  
 }));
 
 // DELETE 204: Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
-    await course.destroy();
-    res.status(204).end();
+    if (course) {
+        await course.destroy();
+        res.status(204).end();
+    } else {
+        res.status(400).json({message: 'Please choose an existing course to delete.'});
+    }
 }));
 
 module.exports = router;
