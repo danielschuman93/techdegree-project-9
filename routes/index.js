@@ -64,8 +64,7 @@ async function authenticateUser(req, res, next) {
     }
 }
 
-
-// GET 200: Returns the currently authenticated user
+// GET USERS 200: Returns the currently authenticated user
 router.get('/users', authenticateUser, (req, res) => {
     const user = req.currentUser;
     res.json({
@@ -75,11 +74,11 @@ router.get('/users', authenticateUser, (req, res) => {
     });
 });
 
-// POST 201: Creates a user, sets the Location header to "/", and returns no content
+// POST USERS 201: Creates a user, sets the Location header to "/", and returns no content
 router.post('/users', asyncHandler(async(req, res) => {
     const user = req.body;
     const userExists = await User.findAll({where: {emailAddress: user.emailAddress}});
-    if (!userExists) {
+    if (userExists.length < 1) {
         user.password = bcryptjs.hashSync(user.password);
         await User.create(user);
         res.location('/');
@@ -87,22 +86,29 @@ router.post('/users', asyncHandler(async(req, res) => {
     } else {
         res.status(400).json({message: 'The email address you are using is already connected to an existing account.'});
     }
-
 }));
 
-// GET 200: Returns a list of courses (including the user that owns each course)
+// GET COURSES 200: Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler(async(req, res) => {
-    const courses = await Course.findAll();
+    let courses = await Course.findAll();
+    let users = [];
+    courses.forEach(async course => {
+        const user = await User.findByPk(course.userId);
+        // console.log(user);
+        courses.splice(courses.indexOf(course) + 1, 0, user);
+        users.push(user);
+    });
     res.json({courses});
 }));
 
-// GET 200: Returns a course (including the user that owns the course) for the provided course ID
+// GET COURSES 200: Returns a course (including the user that owns the course) for the provided course ID
 router.get('/courses/:id', asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
-    res.json({course});
+    const user = await User.findByPk(course.userId);
+    res.json({course, user});
 }));
 
-// POST 201: Creates a course, sets the Location header to the URI for the course, and returns no content
+// POST COURSES 201: Creates a course, sets the Location header to the URI for the course, and returns no content
 router.post('/courses', authenticateUser, asyncHandler(async(req, res) => {
     const course = req.body;
     await Course.create(course);
@@ -110,7 +116,7 @@ router.post('/courses', authenticateUser, asyncHandler(async(req, res) => {
     res.status(201).end();
 }));
 
-// PUT 204: Updates a course and returns no content
+// PUT COURSES 204: Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
     if (course) {
@@ -121,7 +127,7 @@ router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     }  
 }));
 
-// DELETE 204: Deletes a course and returns no content
+// DELETE COURSES 204: Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
     if (course) {

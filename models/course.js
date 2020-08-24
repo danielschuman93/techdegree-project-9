@@ -11,6 +11,7 @@ module.exports = (sequelize) => {
         },
         title: {
             type: Sequelize.STRING,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "title".'
@@ -19,6 +20,7 @@ module.exports = (sequelize) => {
         },
         description: {
             type: Sequelize.TEXT,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "description".'

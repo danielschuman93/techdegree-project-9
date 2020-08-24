@@ -11,6 +11,7 @@ module.exports = (sequelize) => {
         },
         firstName: {
             type: Sequelize.STRING,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "first name".'
@@ -19,6 +20,7 @@ module.exports = (sequelize) => {
         },
         lastName: {
             type: Sequelize.STRING,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "last name".'
@@ -27,6 +29,7 @@ module.exports = (sequelize) => {
         },
         emailAddress: {
             type: Sequelize.STRING,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "email address".'
@@ -35,6 +38,7 @@ module.exports = (sequelize) => {
         },
         password: {
             type: Sequelize.STRING,
+            allowNull: false,
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "password".'
