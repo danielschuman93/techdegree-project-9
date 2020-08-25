@@ -8,7 +8,7 @@ const auth = require('basic-auth');
 
 /* Function to check for SequelizeValidationError */
 function checkError(error, req, res){
-    if(error.name === 'SequelizeValidationError'){
+    if(error.name === 'SequelizeValidationError' || 'SequelizeUniqueConstraintError'){
       const errors = error.errors.map(err => err.message);
       console.error('Validation errors: ', errors);
       res.status(400).json({ errors });
@@ -77,35 +77,38 @@ router.get('/users', authenticateUser, (req, res) => {
 // POST USERS 201: Creates a user, sets the Location header to "/", and returns no content
 router.post('/users', asyncHandler(async(req, res) => {
     const user = req.body;
-    const userExists = await User.findAll({where: {emailAddress: user.emailAddress}});
-    if (userExists.length < 1) {
+    if (user.password) {
         user.password = bcryptjs.hashSync(user.password);
-        await User.create(user);
-        res.location('/');
-        res.status(201).end();
-    } else {
-        res.status(400).json({message: 'The email address you are using is already connected to an existing account.'});
     }
+    await User.create(user);
+    res.location('/');
+    res.status(201).end();
 }));
 
 // GET COURSES 200: Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler(async(req, res) => {
-    let courses = await Course.findAll();
-    let users = [];
-    courses.forEach(async course => {
-        const user = await User.findByPk(course.userId);
-        // console.log(user);
-        courses.splice(courses.indexOf(course) + 1, 0, user);
-        users.push(user);
+    let courses = await Course.findAll({
+        include: [
+            {
+                model: User,
+                as: 'owner'
+            }
+        ]
     });
     res.json({courses});
 }));
 
 // GET COURSES 200: Returns a course (including the user that owns the course) for the provided course ID
 router.get('/courses/:id', asyncHandler(async(req, res) => {
-    const course = await Course.findByPk(req.params.id);
-    const user = await User.findByPk(course.userId);
-    res.json({course, user});
+    const course = await Course.findByPk(req.params.id, {
+        include: [
+            {
+                model: User,
+                as: 'owner'
+            }
+        ]
+    });
+    res.json({course});
 }));
 
 // POST COURSES 201: Creates a course, sets the Location header to the URI for the course, and returns no content

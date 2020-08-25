@@ -33,7 +33,14 @@ module.exports = (sequelize) => {
             validate: {
                 notEmpty: {
                     msg: 'Please provide a value for "email address".'
+                },
+                isEmail: {
+                    msg: 'Please provide an email address in the form email@example.com'
                 }
+            },
+            unique: {
+                args: true,
+                msg: 'Email address is already in use!'
             }
         },
         password: {
