@@ -4,11 +4,13 @@ const User = require('../models').User;
 const Course = require('../models').Course;
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
+const isEmpty= require('lodash.isempty');
 
 
 /* Function to check for SequelizeValidationError */
 function checkError(error, req, res){
     if(error.name === 'SequelizeValidationError' || 'SequelizeUniqueConstraintError'){
+        console.log(error);
       const errors = error.errors.map(err => err.message);
       console.error('Validation errors: ', errors);
       res.status(400).json({ errors });
@@ -68,6 +70,7 @@ async function authenticateUser(req, res, next) {
 router.get('/users', authenticateUser, (req, res) => {
     const user = req.currentUser;
     res.json({
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         emailAddress: user.emailAddress,
@@ -88,10 +91,12 @@ router.post('/users', asyncHandler(async(req, res) => {
 // GET COURSES 200: Returns a list of courses (including the user that owns each course)
 router.get('/courses', asyncHandler(async(req, res) => {
     let courses = await Course.findAll({
+        attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded'],
         include: [
             {
                 model: User,
-                as: 'owner'
+                as: 'owner',
+                attributes: ['id', 'firstName', 'lastName', 'emailAddress']
             }
         ]
     });
@@ -101,10 +106,12 @@ router.get('/courses', asyncHandler(async(req, res) => {
 // GET COURSES 200: Returns a course (including the user that owns the course) for the provided course ID
 router.get('/courses/:id', asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id, {
+        attributes: ['id', 'title', 'description', 'estimatedTime', 'materialsNeeded'],
         include: [
             {
                 model: User,
-                as: 'owner'
+                as: 'owner',
+                attributes: ['id', 'firstName', 'lastName', 'emailAddress']
             }
         ]
     });
@@ -114,28 +121,79 @@ router.get('/courses/:id', asyncHandler(async(req, res) => {
 // POST COURSES 201: Creates a course, sets the Location header to the URI for the course, and returns no content
 router.post('/courses', authenticateUser, asyncHandler(async(req, res) => {
     const course = req.body;
-    await Course.create(course);
-    res.location(`/courses/${course.id}`);
+    const newCourse = await Course.create(course);
+    res.location(`/courses/${newCourse.id}`);
     res.status(201).end();
 }));
 
 // PUT COURSES 204: Updates a course and returns no content
 router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
-    const course = await Course.findByPk(req.params.id);
-    if (course) {
-        await course.update(req.body);
-        res.status(204).end();
+    if (!isEmpty(req.body)) {
+        const course = await Course.findByPk(req.params.id);
+        if (course) {
+            const user = req.currentUser;
+            if (user.id === course.userId){
+                await course.update(req.body);
+                res.status(204).end();
+            } else {
+                res.status(403).json({message: 'You can only update courses that you own.'})
+            }
+        } else {
+            res.status(400).json({message: 'Please choose an existing course to update.'});
+        }
     } else {
-        res.status(400).json({message: 'Please choose an existing course to update.'});
-    }  
+        const error = new Error();
+        error.name = 'SequelizeValidationError';
+        error.errors = [{
+            message: 'Course.title cannot be null',
+            type: 'notNull Violation',
+            path: 'title',
+            value: null,
+            origin: 'CORE',
+            instance: [Course],
+            validatorKey: 'is_null',
+            validatorName: null,
+            validatorArgs: []
+          },
+          {
+            message: 'Course.description cannot be null',
+            type: 'notNull Violation',
+            path: 'description',
+            value: null,
+            origin: 'CORE',
+            instance: [Course],
+            validatorKey: 'is_null',
+            validatorName: null,
+            validatorArgs: []
+          },
+          {
+            message: 'Course.userId cannot be null',
+            type: 'notNull Violation',
+            path: 'userId',
+            value: null,
+            origin: 'CORE',
+            instance: [Course],
+            validatorKey: 'is_null',
+            validatorName: null,
+            validatorArgs: []
+          }
+        ];
+        throw error;
+    }
+  
 }));
 
 // DELETE COURSES 204: Deletes a course and returns no content
 router.delete('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
     const course = await Course.findByPk(req.params.id);
     if (course) {
-        await course.destroy();
-        res.status(204).end();
+        const user = req.currentUser;
+        if (user.id === course.userId) {
+            await course.destroy();
+            res.status(204).end();
+        } else {
+            res.status(403).json({message: 'You can only delete courses that you own.'})
+        }
     } else {
         res.status(400).json({message: 'Please choose an existing course to delete.'});
     }
