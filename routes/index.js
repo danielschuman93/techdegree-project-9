@@ -4,7 +4,7 @@ const User = require('../models').User;
 const Course = require('../models').Course;
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
-const isEmpty= require('lodash.isempty');
+const isEmpty = require('lodash.isempty');
 
 
 /* Function to check for SequelizeValidationError */
