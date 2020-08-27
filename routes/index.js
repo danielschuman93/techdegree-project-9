@@ -4,7 +4,7 @@ const User = require('../models').User;
 const Course = require('../models').Course;
 const bcryptjs = require('bcryptjs');
 const auth = require('basic-auth');
-const isEmpty = require('lodash.isempty');
+const { body, validationResult } = require('express-validator');
 
 
 /* Function to check for SequelizeValidationError */
@@ -78,7 +78,11 @@ router.get('/users', authenticateUser, (req, res) => {
 });
 
 // POST USERS 201: Creates a user, sets the Location header to "/", and returns no content
-router.post('/users', asyncHandler(async(req, res) => {
+router.post('/users', body('emailAdress').isEmail() ,asyncHandler(async(req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
     const user = req.body;
     if (user.password) {
         user.password = bcryptjs.hashSync(user.password);
@@ -127,58 +131,22 @@ router.post('/courses', authenticateUser, asyncHandler(async(req, res) => {
 }));
 
 // PUT COURSES 204: Updates a course and returns no content
-router.put('/courses/:id', authenticateUser, asyncHandler(async(req, res) => {
-    if (!isEmpty(req.body)) {
-        const course = await Course.findByPk(req.params.id);
-        if (course) {
-            const user = req.currentUser;
-            if (user.id === course.userId){
-                await course.update(req.body);
-                res.status(204).end();
-            } else {
-                res.status(403).json({message: 'You can only update courses that you own.'})
-            }
+router.put('/courses/:id', authenticateUser, [body('title').isLength({min: 1}), body('description').isLength({min: 1}), body('userId').isLength({min: 1})], asyncHandler(async(req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const course = await Course.findByPk(req.params.id);
+    if (course) {
+        const user = req.currentUser;
+        if (user.id === course.userId){
+            await course.update(req.body);
+            res.status(204).end();
         } else {
-            res.status(400).json({message: 'Please choose an existing course to update.'});
+            res.status(403).json({message: 'You can only update courses that you own.'})
         }
     } else {
-        const error = new Error();
-        error.name = 'SequelizeValidationError';
-        error.errors = [{
-            message: 'Course.title cannot be null',
-            type: 'notNull Violation',
-            path: 'title',
-            value: null,
-            origin: 'CORE',
-            instance: [Course],
-            validatorKey: 'is_null',
-            validatorName: null,
-            validatorArgs: []
-          },
-          {
-            message: 'Course.description cannot be null',
-            type: 'notNull Violation',
-            path: 'description',
-            value: null,
-            origin: 'CORE',
-            instance: [Course],
-            validatorKey: 'is_null',
-            validatorName: null,
-            validatorArgs: []
-          },
-          {
-            message: 'Course.userId cannot be null',
-            type: 'notNull Violation',
-            path: 'userId',
-            value: null,
-            origin: 'CORE',
-            instance: [Course],
-            validatorKey: 'is_null',
-            validatorName: null,
-            validatorArgs: []
-          }
-        ];
-        throw error;
+        res.status(400).json({message: 'Please choose an existing course to update.'});
     }
   
 }));
