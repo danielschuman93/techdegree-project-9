@@ -78,7 +78,7 @@ router.get('/users', authenticateUser, (req, res) => {
 });
 
 // POST USERS 201: Creates a user, sets the Location header to "/", and returns no content
-router.post('/users', body('emailAdress').isEmail() ,asyncHandler(async(req, res) => {
+router.post('/users', asyncHandler(async(req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
